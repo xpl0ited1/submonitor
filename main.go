@@ -26,8 +26,12 @@ func doScan() {
 
 		//Scan
 		subs = append(subs, scanners.GetHackertarget(domain)...)
-		subs = append(subs, scanners.GetShodan(domain)...)
-		subs = append(subs, scanners.GetSectrails(domain)...)
+		if utils.GetConfig().SHODAN_APIKEY != "" {
+			subs = append(subs, scanners.GetShodan(domain)...)
+		}
+		if utils.GetConfig().SECTRAILS_APIKEY != "" {
+			subs = append(subs, scanners.GetSectrails(domain)...)
+		}
 
 		subs = utils.Unique(subs)
 
