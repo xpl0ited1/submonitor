@@ -44,11 +44,11 @@ func main() {
 	configFilePath = *configFilePathFlag
 
 	utils.Init(configFilePath)
+	checkFileExists()
 	doScan()
 }
 
-func doScan() {
-
+func checkFileExists() {
 	if _, err := os.Stat(targetsFilePath); errors.Is(err, os.ErrNotExist) {
 		// path/to/whatever does not exist
 		log.Fatalf("%s does not exist", targetsFilePath)
@@ -57,6 +57,9 @@ func doScan() {
 		// path/to/whatever does not exist
 		log.Fatalf("%s does not exist", configFilePath)
 	}
+}
+
+func doScan() {
 	for _, domain := range utils.ReadResults(targetsFilePath) {
 		var subs []string
 		var resultsFilename = utils.GenerateFileName(domain)

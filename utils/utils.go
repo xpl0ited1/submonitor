@@ -82,7 +82,7 @@ func GenerateLastFileName(domain string) string {
 }
 
 func SaveResults(filename string, subs []string) {
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(GetConfig().RESULTS_PATH+filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 	if err != nil {
 		log.Fatalf("failed creating file: %s", err)
