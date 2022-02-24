@@ -1,0 +1,21 @@
+#Define where the discovered domains where be dumped ex. /var/www/html/subs/
+#NOTE it should end with a slash
+results_path: ./
+
+#Security Trails API KEY
+securitytrails_apikey:
+
+#SHODAN API KEY
+shodan_apikey:
+
+#SLACK APPLICATION WEBHOOK
+slack_webhook:
+
+#TELEGRAM BOT TOKEN
+telegram_bot_token:
+
+#TELEGRAM CHAT ID WHERE THE MESSAGES WILL BE SENT
+telegram_chat_id:
+
+#DISCORD WEBHOOK URL
+discord_webhook:
