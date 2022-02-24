@@ -29,6 +29,7 @@ type conf struct {
 	TELEGRAM_CHAT_ID   string `yaml:"telegram_chat_id"`
 	RESULTS_PATH       string `yaml:"results_path"`
 	DISCORD_WEBHOOK    string `yaml:"discord_webhook"`
+	DISCORD_BOT_NAME   string `yaml:"discord_bot_name"`
 }
 
 //TODO: Refactor this as for better coding practices

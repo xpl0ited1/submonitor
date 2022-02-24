@@ -81,7 +81,7 @@ func GetHackertarget(domain string) []string {
 	for _, sub := range strings.Split(string(body), "\n") {
 		parsed_sub := strings.Split(sub, ",")[0]
 		if parsed_sub != "" && parsed_sub != domain {
-			subs = append(subs, sub)
+			subs = append(subs, parsed_sub)
 		}
 	}
 

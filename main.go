@@ -7,12 +7,14 @@ import (
 )
 
 /*
- Subdomain monitor v1.0
+ Subdomain monitor v1.0.1
  by: xpl0ited1 (Bastian Muhlhauser)
+ 24-02-2022
  TODO: Multithreading
  TODO: Censys.io
  TODO: Certspotter
  TODO: DNS Bruteforcing
+ TODO: Implement command handlers on bots
 */
 
 func main() {
@@ -51,6 +53,7 @@ func doScan() {
 		utils.SaveResults(resultsFilename, diff)
 
 		//Report with the bots
-		bots.Report(diff, domain, resultsFilename)
+		bots.Report(diff, domain)
+		bots.SendAttachments(resultsFilename)
 	}
 }
