@@ -1,6 +1,10 @@
 package main
 
 import (
+	"errors"
+	"flag"
+	"log"
+	"os"
 	"submonitor/bots"
 	"submonitor/scanners"
 	"submonitor/utils"
@@ -17,12 +21,43 @@ import (
  TODO: Implement command handlers on bots
 */
 
+var (
+	targetsFilePath = utils.GetCurrentUserHome() + "/.config/submonitor/targets.txt"
+	configFilePath  = utils.GetCurrentUserHome() + "/.config/submonitor/config.yaml"
+)
+
 func main() {
+	currentUserHome := utils.GetCurrentUserHome()
+
+	targetsFilePathFlag := flag.String("t",
+		currentUserHome+"/.config/submonitor/targets.txt",
+		"path to the targets.txt file (default: $HOME/.config/submonitor/targets.txt",
+	)
+
+	configFilePathFlag := flag.String("c",
+		currentUserHome+"/.config/submonitor/config.yaml",
+		"path to the config.yaml file (default: $HOME/.config/submonitor/config.yaml)",
+	)
+
+	flag.Parse()
+	targetsFilePath = *targetsFilePathFlag
+	configFilePath = *configFilePathFlag
+
+	utils.Init(configFilePath)
 	doScan()
 }
 
 func doScan() {
-	for _, domain := range utils.ReadResults("targets.txt") {
+
+	if _, err := os.Stat(targetsFilePath); errors.Is(err, os.ErrNotExist) {
+		// path/to/whatever does not exist
+		log.Fatalf("%s does not exist", targetsFilePath)
+	}
+	if _, err := os.Stat(configFilePath); errors.Is(err, os.ErrNotExist) {
+		// path/to/whatever does not exist
+		log.Fatalf("%s does not exist", configFilePath)
+	}
+	for _, domain := range utils.ReadResults(targetsFilePath) {
 		var subs []string
 		var resultsFilename = utils.GenerateFileName(domain)
 

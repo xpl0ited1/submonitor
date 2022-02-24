@@ -3,6 +3,7 @@ package scanners
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 	"submonitor/utils"
@@ -31,6 +32,11 @@ func GetSectrails(domain string) []string {
 	var dat map[string]interface{}
 	if err := json.Unmarshal(body, &dat); err != nil {
 		panic(err)
+	}
+
+	if dat["message"] == "You've exceeded the usage limits for your account." {
+		log.Printf("[SECURITY TRAILS] You've exceeded the usage limits for your account.")
+		return subs
 	}
 
 	for _, sub := range dat["subdomains"].([]interface{}) {

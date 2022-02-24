@@ -32,10 +32,14 @@ type conf struct {
 	DISCORD_BOT_NAME   string `yaml:"discord_bot_name"`
 }
 
+var (
+	configFilePath = GetCurrentUserHome() + "/.config/submonitor/config.yaml"
+)
+
 //TODO: Refactor this as for better coding practices
 func (c *conf) getConf() *conf {
 
-	yamlFile, err := ioutil.ReadFile("config.yaml")
+	yamlFile, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
 		log.Printf("yamlFile.Get err   #%v ", err)
 	}
@@ -45,6 +49,10 @@ func (c *conf) getConf() *conf {
 	}
 
 	return c
+}
+
+func Init(filePath string) {
+	configFilePath = filePath
 }
 
 func GetConfig() conf {
@@ -135,4 +143,12 @@ func ReplaceFileContent(filename string, subs []string) {
 
 	datawriter.Flush()
 	file.Close()
+}
+
+func GetCurrentUserHome() string {
+	dirname, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return dirname
 }
