@@ -77,9 +77,8 @@ func SendAttachments(resultsFilename string) {
 }
 
 func sendAttachmentToDiscord(resultsFilename string) {
-	fileDir, _ := os.Getwd()
-	fileName := utils.GetConfig().RESULTS_PATH + resultsFilename
-	filePath := path.Join(fileDir, fileName)
+	fileDir := utils.GetConfig().RESULTS_PATH
+	filePath := path.Join(fileDir, resultsFilename)
 
 	file, _ := os.Open(filePath)
 	defer file.Close()
