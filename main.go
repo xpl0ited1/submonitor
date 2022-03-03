@@ -34,23 +34,23 @@ func main() {
 
 	targetsFilePathFlag := flag.String("t",
 		currentUserHome+"/.config/submonitor/targets.txt",
-		"path to the targets.txt file (default: $HOME/.config/submonitor/targets.txt",
+		"path to the targets.txt file ",
 	)
 
 	configFilePathFlag := flag.String("c",
 		currentUserHome+"/.config/submonitor/config.yaml",
-		"path to the config.yaml file (default: $HOME/.config/submonitor/config.yaml)",
+		"path to the config.yaml file",
 	)
 
 	resolverFlag := flag.String("r", "", "dns server using for resolving subdomains. ex.: 8.8.8.8:53")
 
 	subdomainsBruteFlag := flag.String("w",
 		currentUserHome+"/.config/submonitor/brute.txt",
-		"path to the wordlists that will be used to bruteforce subdomains (default: $HOME/.config/submonitor/brute.txt")
+		"path to the wordlists that will be used to bruteforce subdomains ")
 
 	bruteForceFlag := flag.Bool("b", false, "if specified the tool will try to bruteforce subdomains")
 
-	dnsTimeoutFlag := flag.Int("dt", 5000, "timeout for dns queries when bruteforcing (default: 5000)")
+	dnsTimeoutFlag := flag.Int("dt", 5000, "timeout for dns queries when bruteforcing")
 
 	flag.Parse()
 	targetsFilePath = *targetsFilePathFlag
