@@ -23,8 +23,10 @@ import (
 */
 
 var (
-	targetsFilePath = utils.GetCurrentUserHome() + "/.config/submonitor/targets.txt"
-	configFilePath  = utils.GetCurrentUserHome() + "/.config/submonitor/config.yaml"
+	targetsFilePath     = utils.GetCurrentUserHome() + "/.config/submonitor/targets.txt"
+	configFilePath      = utils.GetCurrentUserHome() + "/.config/submonitor/config.yaml"
+	subdomainsBrutePath = utils.GetCurrentUserHome() + "/.config/submonitor/brute.txt"
+	dnsTimeout          = 5000
 )
 
 func main() {
@@ -40,16 +42,28 @@ func main() {
 		"path to the config.yaml file (default: $HOME/.config/submonitor/config.yaml)",
 	)
 
+	resolverFlag := flag.String("r", "", "dns server using for resolving subdomains. ex.: 8.8.8.8:53")
+
+	subdomainsBruteFlag := flag.String("w",
+		currentUserHome+"/.config/submonitor/brute.txt",
+		"path to the wordlists that will be used to bruteforce subdomains (default: $HOME/.config/submonitor/brute.txt")
+
+	bruteForceFlag := flag.Bool("b", false, "if specified the tool will try to bruteforce subdomains")
+
+	dnsTimeoutFlag := flag.Int("dt", 5000, "timeout for dns queries when bruteforcing (default: 5000)")
+
 	flag.Parse()
 	targetsFilePath = *targetsFilePathFlag
 	configFilePath = *configFilePathFlag
+	subdomainsBrutePath = *subdomainsBruteFlag
+	dnsTimeout = *dnsTimeoutFlag
 
 	utils.Init(configFilePath)
-	checkFileExists()
-	doScan()
+	checkFileExists(*bruteForceFlag)
+	doScan(*bruteForceFlag, *resolverFlag)
 }
 
-func checkFileExists() {
+func checkFileExists(isBruteForcing bool) {
 	if _, err := os.Stat(targetsFilePath); errors.Is(err, os.ErrNotExist) {
 		// path/to/whatever does not exist
 		log.Fatalf("%s does not exist", targetsFilePath)
@@ -58,9 +72,15 @@ func checkFileExists() {
 		// path/to/whatever does not exist
 		log.Fatalf("%s does not exist", configFilePath)
 	}
+	if isBruteForcing {
+		if _, err := os.Stat(subdomainsBrutePath); errors.Is(err, os.ErrNotExist) {
+			// path/to/whatever does not exist
+			log.Fatalf("%s does not exist", subdomainsBrutePath)
+		}
+	}
 }
 
-func doScan() {
+func doScan(isBruteForcing bool, resolver string) {
 	for _, domain := range utils.ReadResults(targetsFilePath) {
 		var subs []string
 		var resultsFilename = utils.GenerateFileName(domain)
@@ -73,6 +93,10 @@ func doScan() {
 		}
 		if utils.GetConfig().SECTRAILS_APIKEY != "" {
 			subs = append(subs, scanners.GetSectrails(domain)...)
+		}
+
+		if isBruteForcing {
+			subs = append(subs, scanners.BruteForce(utils.ReadResults(subdomainsBrutePath), resolver, domain, dnsTimeout)...)
 		}
 
 		subs = utils.Unique(subs)

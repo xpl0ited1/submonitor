@@ -1,12 +1,15 @@
 package scanners
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"strings"
 	"submonitor/utils"
+	"time"
 )
 
 const (
@@ -116,6 +119,62 @@ func GetThreatCrowd(domain string) []string {
 
 	for _, sub := range dat["subdomains"].([]interface{}) {
 		subs = append(subs, sub.(string))
+	}
+
+	return subs
+}
+
+func BruteForce(words []string, resolverIP, domain string, timeout int) []string {
+	var subs []string
+
+	if len(resolverIP) > 0 {
+		//Determine if the resolverIP comes with a port ex: 8.8.8.8:53
+		var dnsResolverIP string
+
+		if len(strings.Split(resolverIP, ":")) > 1 {
+			dnsResolverIP = resolverIP
+		} else {
+			dnsResolverIP += resolverIP + ":53"
+		}
+
+		var (
+			dnsResolverProto     = "udp"   // Protocol to use for the DNS resolver
+			dnsResolverTimeoutMs = timeout // Timeout (ms) for the DNS resolver (optional)
+		)
+
+		dialer := &net.Dialer{
+			Resolver: &net.Resolver{
+				PreferGo: true,
+				Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+					d := net.Dialer{
+						Timeout: time.Duration(dnsResolverTimeoutMs) * time.Millisecond,
+					}
+					return d.DialContext(ctx, dnsResolverProto, dnsResolverIP)
+				},
+			},
+		}
+
+		dialContext := func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialer.DialContext(ctx, network, addr)
+		}
+
+		http.DefaultTransport.(*http.Transport).DialContext = dialContext
+
+		for _, word := range words {
+			ips, _ := dialer.Resolver.LookupHost(context.Background(), word+"."+domain)
+
+			if len(ips) > 0 {
+				subs = append(subs, word+"."+domain)
+			}
+		}
+	} else {
+		for _, word := range words {
+			ips, _ := net.LookupIP(word + "." + domain)
+
+			if len(ips) > 0 {
+				subs = append(subs, word+"."+domain)
+			}
+		}
 	}
 
 	return subs

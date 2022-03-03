@@ -20,15 +20,24 @@ Download the compiled binary from the releases section: https://github.com/xpl0i
 
 Or compile it by yourself
 
-```bash
+```
 git clone https://github.com/xpl0ited1/submonitor/
 cd submonitor
 go build main.go
 
 ./submonitor -h
 submonitor v1.0.2
-  -c    path to the config.yaml file (default: $HOME/.config/submonitor/config.yaml)
-  -t    path to the targets.txt file (default: $HOME/.config/submonitor/targets.txt)
+  -b    if specified the tool will try to bruteforce subdomains
+  -c string
+        path to the config.yaml file (default: $HOME/.config/submonitor/config.yaml) (default "/home/xpl0ited1/.config/submonitor/config.yaml")
+  -dt int
+        timeout for dns queries when bruteforcing (default: 5000) (default 5000)
+  -r string
+        dns server using for resolving subdomains. ex.: 8.8.8.8:53
+  -t string
+        path to the targets.txt file (default: $HOME/.config/submonitor/targets.txt (default "/home/xpl0ited1/.config/submonitor/targets.txt")
+  -w string
+        path to the wordlists that will be used to bruteforce subdomains (default: $HOME/.config/submonitor/brute.txt (default "/home/xpl0ited1/.config/submonitor/brute.txt")
 ```
 
 
