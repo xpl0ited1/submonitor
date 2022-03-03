@@ -103,8 +103,8 @@ func sendAttachmentToTelegram(resultsFilename string) {
 		utils.GetConfig().TELEGRAM_BOT_TOKEN +
 		"/sendDocument"
 
-	fileDir, _ := os.Getwd()
-	fileName := utils.GetConfig().RESULTS_PATH + resultsFilename
+	fileDir := utils.GetConfig().RESULTS_PATH
+	fileName := resultsFilename
 	filePath := path.Join(fileDir, fileName)
 
 	file, _ := os.Open(filePath)
