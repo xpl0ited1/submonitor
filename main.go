@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"submonitor/bots"
@@ -65,6 +66,7 @@ func doScan() {
 		var resultsFilename = utils.GenerateFileName(domain)
 
 		//Scan
+		subs = append(subs, scanners.GetThreatCrowd(domain)...)
 		subs = append(subs, scanners.GetHackertarget(domain)...)
 		if utils.GetConfig().SHODAN_APIKEY != "" {
 			subs = append(subs, scanners.GetShodan(domain)...)
@@ -74,6 +76,9 @@ func doScan() {
 		}
 
 		subs = utils.Unique(subs)
+		for _, sub := range subs {
+			fmt.Println(sub)
+		}
 
 		//Load last results
 		last_results := utils.ReadResults(utils.GenerateFileNameAll(domain))
@@ -92,6 +97,8 @@ func doScan() {
 
 		//Report with the bots
 		bots.Report(diff, domain)
-		bots.SendAttachments(resultsFilename)
+		if len(diff) > 0 {
+			bots.SendAttachments(resultsFilename)
+		}
 	}
 }

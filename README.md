@@ -1,4 +1,4 @@
-# submonitor v1.0.2  by xpl0ited1
+# submonitor  by xpl0ited1
 
 ---
 ### Description

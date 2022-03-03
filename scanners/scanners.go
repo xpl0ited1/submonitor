@@ -13,6 +13,7 @@ const (
 	SECURITYTRAILS_API_URL = "https://api.securitytrails.com/v1/"
 	SHODAN_API_URL         = "https://api.shodan.io/dns/domain/"
 	HACKERTARGET_URL       = "https://api.hackertarget.com/hostsearch/?q="
+	THREATCROWD_URL        = "https://www.threatcrowd.org/searchApi/v2/domain/report/?domain="
 )
 
 func GetSectrails(domain string) []string {
@@ -89,6 +90,32 @@ func GetHackertarget(domain string) []string {
 		if parsed_sub != "" && parsed_sub != domain {
 			subs = append(subs, parsed_sub)
 		}
+	}
+
+	return subs
+}
+
+func GetThreatCrowd(domain string) []string {
+	var subs []string
+	url := THREATCROWD_URL + domain
+
+	req, _ := http.NewRequest("GET", url, nil)
+
+	req.Header.Add("Accept", "application/json")
+
+	res, _ := http.DefaultClient.Do(req)
+
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	var dat map[string]interface{}
+	if err := json.Unmarshal(body, &dat); err != nil {
+		return subs
+		//panic(err)
+	}
+
+	for _, sub := range dat["subdomains"].([]interface{}) {
+		subs = append(subs, sub.(string))
 	}
 
 	return subs
