@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"submonitor/bots"
@@ -100,9 +99,6 @@ func doScan(isBruteForcing bool, resolver string) {
 		}
 
 		subs = utils.Unique(subs)
-		for _, sub := range subs {
-			fmt.Println(sub)
-		}
 
 		//Load last results
 		last_results := utils.ReadResults(utils.GenerateFileNameAll(domain))
@@ -110,7 +106,7 @@ func doScan(isBruteForcing bool, resolver string) {
 		diff := utils.Difference(subs, last_results)
 
 		//Append last with new to make a whole file
-		allSubs := append(last_results, subs...)
+		allSubs := append(last_results, diff...)
 		allSubs = utils.Unique(allSubs)
 
 		//Replace last results with last+new
