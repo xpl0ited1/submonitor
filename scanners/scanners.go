@@ -1,8 +1,11 @@
 package scanners
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -17,6 +20,7 @@ const (
 	SHODAN_API_URL         = "https://api.shodan.io/dns/domain/"
 	HACKERTARGET_URL       = "https://api.hackertarget.com/hostsearch/?q="
 	THREATCROWD_URL        = "https://www.threatcrowd.org/searchApi/v2/domain/report/?domain="
+	CENSYS_URL             = "https://search.censys.io/api/v1/search/certificates"
 )
 
 func GetSectrails(domain string) []string {
@@ -177,5 +181,66 @@ func BruteForce(words []string, resolverIP, domain string, timeout int) []string
 		}
 	}
 
+	return subs
+}
+
+func GetCensys(domain string) []string {
+	var subs []string
+	censysPage := 1
+	censysAuthorization := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", utils.GetConfig().CENSYS_API_ID, utils.GetConfig().CENSYS_SECRET)))
+	url := CENSYS_URL
+
+	var jsonStr = []byte(fmt.Sprintf(`{"query": "parsed.names: %s","page": %d,"fields": ["parsed.names"],"flatten": false}`, domain, censysPage))
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", censysAuthorization))
+
+	res, _ := http.DefaultClient.Do(req)
+
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	var dat = CensysCertResultsBase{}
+	if err := json.Unmarshal(body, &dat); err != nil {
+		panic(err)
+	}
+
+	var tmp_results = []CensysResults{}
+	tmp_results = append(tmp_results, dat.Results...)
+
+	for _, item := range tmp_results {
+		subs = append(subs, item.Parsed.Names...)
+	}
+
+	for censysPage <= dat.MetaData.Pages {
+		time.Sleep(5 * time.Second)
+		censysPage = censysPage + 1
+		jsonStr = []byte(fmt.Sprintf(`{"query": "parsed.names: %s","page": %d,"fields": ["parsed.names"],"flatten": false}`, domain, censysPage))
+
+		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+
+		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Accept", "application/json")
+		req.Header.Add("Authorization", fmt.Sprintf("Basic %s", censysAuthorization))
+
+		res, _ := http.DefaultClient.Do(req)
+
+		defer res.Body.Close()
+		body, _ := ioutil.ReadAll(res.Body)
+
+		dat = CensysCertResultsBase{}
+		if err := json.Unmarshal(body, &dat); err != nil {
+			panic(err)
+		}
+		tmp_results = []CensysResults{}
+		tmp_results = append(tmp_results, dat.Results...)
+
+		for _, item := range tmp_results {
+			subs = append(subs, item.Parsed.Names...)
+		}
+	}
 	return subs
 }

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -21,6 +22,24 @@ func Unique(stringSlice []string) []string {
 	return list
 }
 
+func StripWithNoDomain(subs []string, domain string) []string {
+	var list []string
+	for _, item := range subs {
+		if strings.Contains(item, domain) {
+			list = append(list, item)
+		}
+	}
+	return list
+}
+
+func LowerSubs(subs []string) []string {
+	var list []string
+	for _, item := range subs {
+		list = append(list, strings.ToLower(item))
+	}
+	return list
+}
+
 type conf struct {
 	SECTRAILS_APIKEY   string `yaml:"securitytrails_apikey"`
 	SHODAN_APIKEY      string `yaml:"shodan_apikey"`
@@ -30,6 +49,8 @@ type conf struct {
 	RESULTS_PATH       string `yaml:"results_path"`
 	DISCORD_WEBHOOK    string `yaml:"discord_webhook"`
 	DISCORD_BOT_NAME   string `yaml:"discord_bot_name"`
+	CENSYS_API_ID      string `yaml:"censys_api_id"`
+	CENSYS_SECRET      string `yaml:"censys_secret"`
 }
 
 var (

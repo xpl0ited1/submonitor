@@ -23,3 +23,7 @@ discord_webhook:
 
 #DISCORD BOT NAME
 discord_bot_name:
+
+#CENSYS
+censys_api_id:
+censys_secret:

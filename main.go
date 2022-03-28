@@ -98,7 +98,11 @@ func doScan(isBruteForcing bool, resolver string) {
 			subs = append(subs, scanners.BruteForce(utils.ReadResults(subdomainsBrutePath), resolver, domain, dnsTimeout)...)
 		}
 
-		subs = utils.Unique(subs)
+		if utils.GetConfig().CENSYS_SECRET != "" && utils.GetConfig().CENSYS_API_ID != "" {
+			subs = append(subs, scanners.GetCensys(domain)...)
+		}
+
+		subs = utils.StripWithNoDomain(utils.Unique(utils.LowerSubs(subs)), domain)
 
 		//Load last results
 		last_results := utils.ReadResults(utils.GenerateFileNameAll(domain))
