@@ -120,7 +120,7 @@ func SaveResults(filename string, subs []string) {
 }
 
 func ReadResults(filename string) []string {
-	file, err := os.Open(filename)
+	file, err := os.Open(GetConfig().RESULTS_PATH + filename)
 	if err != nil {
 		return nil
 	}
