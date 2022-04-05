@@ -134,6 +134,21 @@ func ReadResults(filename string) []string {
 	return lines
 }
 
+func ReadFile(filename string) []string {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil
+	}
+	defer file.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return lines
+}
+
 func Difference(newResults, lastResults []string) []string {
 	mb := make(map[string]struct{}, len(lastResults))
 	for _, x := range lastResults {

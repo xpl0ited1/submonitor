@@ -79,7 +79,7 @@ func checkFileExists(isBruteForcing bool) {
 }
 
 func doScan(isBruteForcing bool, resolver string) {
-	for _, domain := range utils.ReadResults(targetsFilePath) {
+	for _, domain := range utils.ReadFile(targetsFilePath) {
 		var subs []string
 		var resultsFilename = utils.GenerateFileName(domain)
 
@@ -94,7 +94,7 @@ func doScan(isBruteForcing bool, resolver string) {
 		}
 
 		if isBruteForcing {
-			subs = append(subs, scanners.BruteForce(utils.ReadResults(subdomainsBrutePath), resolver, domain, dnsTimeout)...)
+			subs = append(subs, scanners.BruteForce(utils.ReadFile(subdomainsBrutePath), resolver, domain, dnsTimeout)...)
 		}
 
 		if utils.GetConfig().CENSYS_SECRET != "" && utils.GetConfig().CENSYS_API_ID != "" {
