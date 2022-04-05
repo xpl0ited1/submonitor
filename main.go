@@ -14,7 +14,7 @@ import (
  Subdomain monitor v1.0.1
  by: xpl0ited1 (Bastian Muhlhauser)
  24-02-2022
-Last updated: 28-03-2022
+Last updated: 05-04-2022
  TODO: Multithreading
  TODO: Certspotter
  TODO: Implement command handlers on bots
