@@ -8,6 +8,7 @@ import (
 	"submonitor/bots"
 	"submonitor/scanners"
 	"submonitor/utils"
+	"sync"
 )
 
 /*
@@ -79,49 +80,65 @@ func checkFileExists(isBruteForcing bool) {
 }
 
 func doScan(isBruteForcing bool, resolver string) {
+
+	var wgDomains sync.WaitGroup
+
 	for _, domain := range utils.ReadFile(targetsFilePath) {
-		var subs []string
-		var resultsFilename = utils.GenerateFileName(domain)
 
-		//Scan
-		subs = append(subs, scanners.GetThreatCrowd(domain)...)
-		subs = append(subs, scanners.GetHackertarget(domain)...)
-		if utils.GetConfig().SHODAN_APIKEY != "" {
-			subs = append(subs, scanners.GetShodan(domain)...)
-		}
-		if utils.GetConfig().SECTRAILS_APIKEY != "" {
-			subs = append(subs, scanners.GetSectrails(domain)...)
-		}
+		wgDomains.Add(1)
 
-		if isBruteForcing {
-			subs = append(subs, scanners.BruteForce(utils.ReadFile(subdomainsBrutePath), resolver, domain, dnsTimeout)...)
-		}
+		go func() {
+			defer wgDomains.Done()
+			scanWorker(isBruteForcing, resolver, domain)
+		}()
 
-		if utils.GetConfig().CENSYS_SECRET != "" && utils.GetConfig().CENSYS_API_ID != "" {
-			subs = append(subs, scanners.GetCensys(domain)...)
-		}
+	}
+	wgDomains.Wait()
+	log.Println("[+] Done!")
+}
 
-		subs = utils.StripWithNoDomain(utils.Unique(utils.LowerSubs(subs)), domain)
+func scanWorker(isBruteForcing bool, resolver string, domain string) {
+	var subs []string
+	var resultsFilename = utils.GenerateFileName(domain)
 
-		//Load last results
-		last_results := utils.ReadResults(utils.GenerateFileNameAll(domain))
+	//Scan
+	subs = append(subs, scanners.GetThreatCrowd(domain)...)
+	subs = append(subs, scanners.GetHackertarget(domain)...)
+	if utils.GetConfig().SHODAN_APIKEY != "" {
+		subs = append(subs, scanners.GetShodan(domain)...)
+	}
+	if utils.GetConfig().SECTRAILS_APIKEY != "" {
+		subs = append(subs, scanners.GetSectrails(domain)...)
+	}
 
-		diff := utils.Difference(subs, last_results)
+	if isBruteForcing {
+		subs = append(subs, scanners.BruteForce(utils.ReadFile(subdomainsBrutePath), resolver, domain, dnsTimeout)...)
+	}
 
-		//Append last with new to make a whole file
-		allSubs := append(last_results, diff...)
-		allSubs = utils.Unique(allSubs)
+	if utils.GetConfig().CENSYS_SECRET != "" && utils.GetConfig().CENSYS_API_ID != "" {
+		subs = append(subs, scanners.GetCensys(domain)...)
+	}
 
-		//Replace last results with last+new
-		utils.SaveResults(utils.GenerateFileNameAll(domain), allSubs)
+	subs = utils.StripWithNoDomain(utils.Unique(utils.LowerSubs(subs)), domain)
 
-		//Save new results
-		utils.SaveResults(resultsFilename, diff)
+	//Load last results
+	last_results := utils.ReadResults(utils.GenerateFileNameAll(domain))
 
-		//Report with the bots
-		bots.Report(diff, domain)
-		if len(diff) > 0 {
-			bots.SendAttachments(resultsFilename)
-		}
+	diff := utils.Difference(subs, last_results)
+
+	//Append last with new to make a whole file
+	allSubs := append(last_results, diff...)
+	allSubs = utils.Unique(allSubs)
+
+	//Replace last results with last+new
+	utils.SaveResults(utils.GenerateFileNameAll(domain), allSubs)
+
+	//Save new results
+	utils.SaveResults(resultsFilename, diff)
+
+	//Report with the bots
+	bots.Report(diff, domain)
+	if len(diff) > 0 {
+		bots.SendAttachments(resultsFilename)
 	}
 }
