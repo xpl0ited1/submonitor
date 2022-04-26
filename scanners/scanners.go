@@ -47,8 +47,13 @@ func GetSectrails(domain string) []string {
 		return subs
 	}
 
-	for _, sub := range dat["subdomains"].([]interface{}) {
-		subs = append(subs, sub.(string)+"."+domain)
+	result := SecurityTrailsResult{}
+	if err := json.Unmarshal(body, &result); err != nil {
+		panic(err)
+	}
+
+	for _, sub := range result.Subdomains {
+		subs = append(subs, sub+"."+domain)
 	}
 
 	return subs
@@ -67,13 +72,13 @@ func GetShodan(domain string) []string {
 	defer res.Body.Close()
 	body, _ := ioutil.ReadAll(res.Body)
 
-	var dat map[string]interface{}
-	if err := json.Unmarshal(body, &dat); err != nil {
+	result := ShodanResult{}
+	if err := json.Unmarshal(body, &result); err != nil {
 		panic(err)
 	}
 
-	for _, sub := range dat["subdomains"].([]interface{}) {
-		subs = append(subs, sub.(string)+"."+domain)
+	for _, sub := range result.Data {
+		subs = append(subs, sub.Subdomain+"."+result.Domain)
 	}
 
 	return subs
@@ -92,11 +97,15 @@ func GetHackertarget(domain string) []string {
 	defer res.Body.Close()
 	body, _ := ioutil.ReadAll(res.Body)
 
-	for _, sub := range strings.Split(string(body), "\n") {
-		parsed_sub := strings.Split(sub, ",")[0]
-		if parsed_sub != "" && parsed_sub != domain {
-			subs = append(subs, parsed_sub)
+	if !strings.Contains(string(body), "error invalid host\n") {
+		for _, sub := range strings.Split(string(body), "\n") {
+			parsed_sub := strings.Split(sub, ",")[0]
+			if parsed_sub != "" && parsed_sub != domain {
+				subs = append(subs, parsed_sub)
+			}
 		}
+	} else {
+		log.Printf("[HackerTarget] Invalid Host")
 	}
 
 	return subs
@@ -115,16 +124,15 @@ func GetThreatCrowd(domain string) []string {
 	defer res.Body.Close()
 	body, _ := ioutil.ReadAll(res.Body)
 
-	var dat map[string]interface{}
-	if err := json.Unmarshal(body, &dat); err != nil {
+	result := ThreatCrowdResult{}
+	if err := json.Unmarshal(body, &result); err != nil {
 		return subs
 		//panic(err)
 	}
 
-	for _, sub := range dat["subdomains"].([]interface{}) {
-		subs = append(subs, sub.(string))
+	for _, sub := range result.Subdomains {
+		subs = append(subs, sub)
 	}
-
 	return subs
 }
 
