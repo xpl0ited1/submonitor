@@ -8,7 +8,6 @@ import (
 	"submonitor/bots"
 	"submonitor/scanners"
 	"submonitor/utils"
-	"sync"
 )
 
 /*
@@ -16,6 +15,7 @@ import (
  by: xpl0ited1 (Bastian Muhlhauser)
  24-02-2022
 Last updated: 25-04-2022
+ TODO: Fix Threading
  TODO: Certspotter
  TODO: Implement command handlers on bots
 */
@@ -80,19 +80,19 @@ func checkFileExists(isBruteForcing bool) {
 
 func doScan(isBruteForcing bool, resolver string) {
 
-	var wgDomains sync.WaitGroup
+	//var wgDomains sync.WaitGroup
 
 	for _, domain := range utils.ReadFile(targetsFilePath) {
 
-		wgDomains.Add(1)
+		//	wgDomains.Add(1)
 
-		go func() {
-			defer wgDomains.Done()
-			scanWorker(isBruteForcing, resolver, domain)
-		}()
+		//	go func() {
+		//		defer wgDomains.Done()
+		scanWorker(isBruteForcing, resolver, domain)
+		//	}()
 
 	}
-	wgDomains.Wait()
+	//wgDomains.Wait()
 	log.Println("[+] Done!")
 }
 
