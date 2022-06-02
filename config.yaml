@@ -27,3 +27,8 @@ discord_bot_name:
 #CENSYS
 censys_api_id:
 censys_secret:
+
+
+#ARF API Integration
+arf_endpoint:
+arf_apikey:

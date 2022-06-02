@@ -25,6 +25,7 @@ var (
 	configFilePath      = utils.GetCurrentUserHome() + "/.config/submonitor/config.yaml"
 	subdomainsBrutePath = utils.GetCurrentUserHome() + "/.config/submonitor/brute.txt"
 	dnsTimeout          = 5000
+	reportToARF         = false
 )
 
 func main() {
@@ -50,22 +51,28 @@ func main() {
 
 	dnsTimeoutFlag := flag.Int("dt", 5000, "timeout for dns queries when bruteforcing")
 
+	reportToARFFlag := flag.Bool("arf", false, "if specified the tool will report the subdomains to ARF API")
+
 	flag.Parse()
 	targetsFilePath = *targetsFilePathFlag
 	configFilePath = *configFilePathFlag
 	subdomainsBrutePath = *subdomainsBruteFlag
 	dnsTimeout = *dnsTimeoutFlag
+	reportToARF = *reportToARFFlag
 
 	utils.Init(configFilePath)
-	checkFileExists(*bruteForceFlag)
+	checkFileExists(*bruteForceFlag, reportToARF)
 	doScan(*bruteForceFlag, *resolverFlag)
 }
 
-func checkFileExists(isBruteForcing bool) {
-	if _, err := os.Stat(targetsFilePath); errors.Is(err, os.ErrNotExist) {
-		// path/to/whatever does not exist
-		log.Fatalf("%s does not exist", targetsFilePath)
+func checkFileExists(isBruteForcing, reportToARF bool) {
+	if !reportToARF {
+		if _, err := os.Stat(targetsFilePath); errors.Is(err, os.ErrNotExist) {
+			// path/to/whatever does not exist
+			log.Fatalf("%s does not exist", targetsFilePath)
+		}
 	}
+
 	if _, err := os.Stat(configFilePath); errors.Is(err, os.ErrNotExist) {
 		// path/to/whatever does not exist
 		log.Fatalf("%s does not exist", configFilePath)
@@ -82,21 +89,28 @@ func doScan(isBruteForcing bool, resolver string) {
 
 	//var wgDomains sync.WaitGroup
 
-	for _, domain := range utils.ReadFile(targetsFilePath) {
+	if reportToARF {
+		for _, domain := range utils.GetTargetsFromARF() {
+			scanWorker(isBruteForcing, resolver, domain.DomainName, domain)
+		}
+	} else {
+		for _, domain := range utils.ReadFile(targetsFilePath) {
 
-		//	wgDomains.Add(1)
+			//	wgDomains.Add(1)
 
-		//	go func() {
-		//		defer wgDomains.Done()
-		scanWorker(isBruteForcing, resolver, domain)
-		//	}()
+			//	go func() {
+			//		defer wgDomains.Done()
+			scanWorker(isBruteForcing, resolver, domain, utils.ARFTarget{})
+			//	}()
 
+		}
+		//wgDomains.Wait()
 	}
-	//wgDomains.Wait()
+
 	log.Println("[+] Done!")
 }
 
-func scanWorker(isBruteForcing bool, resolver string, domain string) {
+func scanWorker(isBruteForcing bool, resolver string, domain string, arfTarget utils.ARFTarget) {
 	var subs []string
 	var resultsFilename = utils.GenerateFileName(domain)
 
@@ -139,5 +153,9 @@ func scanWorker(isBruteForcing bool, resolver string, domain string) {
 	bots.Report(diff, domain)
 	if len(diff) > 0 {
 		bots.SendAttachments(resultsFilename)
+	}
+
+	if reportToARF {
+		utils.PostResultsToARF(diff, domain, arfTarget.ID)
 	}
 }

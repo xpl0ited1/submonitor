@@ -2,9 +2,13 @@ package utils
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -51,6 +55,8 @@ type conf struct {
 	DISCORD_BOT_NAME   string `yaml:"discord_bot_name"`
 	CENSYS_API_ID      string `yaml:"censys_api_id"`
 	CENSYS_SECRET      string `yaml:"censys_secret"`
+	ARF_ENDPOINT       string `yaml:"arf_endpoint"`
+	ARF_APIKEY         string `yaml:"arf_apikey"`
 }
 
 var (
@@ -187,4 +193,47 @@ func GetCurrentUserHome() string {
 		log.Fatal(err)
 	}
 	return dirname
+}
+
+func GetTargetsFromARF() []ARFTarget {
+	var targets []ARFTarget
+	url := GetConfig().ARF_ENDPOINT + "/domains"
+
+	req, _ := http.NewRequest("GET", url, nil)
+
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("X-Api-Key", GetConfig().ARF_APIKEY)
+
+	res, _ := http.DefaultClient.Do(req)
+
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	result := []ARFTarget{}
+	if err := json.Unmarshal(body, &result); err != nil {
+		panic(err)
+	}
+
+	for _, target := range result {
+		targets = append(targets, target)
+	}
+	return targets
+}
+
+func PostResultsToARF(subs []string, targetDomain string, id string) {
+
+	url := GetConfig().ARF_ENDPOINT + "/domains/" + id + "/subdomains"
+
+	for _, sub := range subs {
+		var jsonStr = []byte(fmt.Sprintf(`{"subdomain_name": "%s"}`, sub))
+
+		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+
+		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("X-Api-Key", GetConfig().ARF_APIKEY)
+
+		res, _ := http.DefaultClient.Do(req)
+
+		defer res.Body.Close()
+	}
 }
