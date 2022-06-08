@@ -26,7 +26,9 @@ cd submonitor
 go build main.go
 
 ./submonitor -h
-submonitor v1.0.2
+submonitor v1.0.3
+ -arf
+        if specified the tool will report the subdomains to ARF API
   -b    if specified the tool will try to bruteforce subdomains
   -c string
         path to the config.yaml file (default: $HOME/.config/submonitor/config.yaml) 
