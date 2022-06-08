@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gopkg.in/yaml.v2"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -205,13 +206,17 @@ func GetTargetsFromARF() []ARFTarget {
 	req.Header.Add("X-Api-Key", GetConfig().ARF_APIKEY)
 
 	res, _ := http.DefaultClient.Do(req)
-
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(res.Body)
 	body, _ := ioutil.ReadAll(res.Body)
 
 	result := []ARFTarget{}
 	if err := json.Unmarshal(body, &result); err != nil {
-		panic(err)
+		log.Println(err)
 	}
 
 	for _, target := range result {
@@ -232,8 +237,6 @@ func PostResultsToARF(subs []string, targetDomain string, id string) {
 		req.Header.Add("Content-Type", "application/json")
 		req.Header.Add("X-Api-Key", GetConfig().ARF_APIKEY)
 
-		res, _ := http.DefaultClient.Do(req)
-
-		defer res.Body.Close()
+		_, _ = http.DefaultClient.Do(req)
 	}
 }
