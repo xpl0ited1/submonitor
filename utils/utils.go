@@ -225,6 +225,7 @@ func GetTargetsFromARF() []ARFTarget {
 	return targets
 }
 
+//Deprecated
 func PostResultsToARF(subs []string, targetDomain string, id string) {
 
 	url := GetConfig().ARF_ENDPOINT + "/domains/" + id + "/subdomains"
@@ -239,4 +240,26 @@ func PostResultsToARF(subs []string, targetDomain string, id string) {
 
 		_, _ = http.DefaultClient.Do(req)
 	}
+}
+
+func ExportResultsToArf(subs []string, targetDomain string, id string) {
+	url := GetConfig().ARF_ENDPOINT + "/importSubdomains"
+
+	jsonBasic := fmt.Sprintf(`{"id":"%s","subdomains":[`, id)
+	for idx, sub := range subs {
+		if idx+1 == len(subs) {
+			jsonBasic = jsonBasic + fmt.Sprintf(`{"subdomain_name":"%s"}]}`, sub)
+		} else {
+			jsonBasic = jsonBasic + fmt.Sprintf(`{"subdomain_name":"%s"},`, sub)
+		}
+	}
+
+	var jsonStr = []byte(jsonBasic)
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-Api-Key", GetConfig().ARF_APIKEY)
+
+	_, _ = http.DefaultClient.Do(req)
 }

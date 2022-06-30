@@ -156,6 +156,6 @@ func scanWorker(isBruteForcing bool, resolver string, domain string, arfTarget u
 	}
 
 	if reportToARF {
-		utils.PostResultsToARF(diff, domain, arfTarget.ID)
+		utils.ExportResultsToArf(diff, domain, arfTarget.ID)
 	}
 }
