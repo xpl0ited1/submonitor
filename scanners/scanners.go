@@ -119,7 +119,12 @@ func GetThreatCrowd(domain string) []string {
 
 	req.Header.Add("Accept", "application/json")
 
-	res, _ := http.DefaultClient.Do(req)
+	res, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		log.Println(err)
+		return subs
+	}
 
 	defer res.Body.Close()
 	body, _ := ioutil.ReadAll(res.Body)
