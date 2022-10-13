@@ -11,10 +11,10 @@ import (
 )
 
 /*
- Subdomain monitor v1.0.1
+ Subdomain monitor v1.0.4
  by: xpl0ited1 (Bastian Muhlhauser)
  24-02-2022
-Last updated: 25-04-2022
+Last updated: 13-10-2022
  TODO: Fix Threading
  TODO: Certspotter
  TODO: Implement command handlers on bots
