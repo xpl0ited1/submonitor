@@ -11,10 +11,10 @@ import (
 )
 
 /*
- Subdomain monitor v1.0.4
+ Subdomain monitor v1.0.5
  by: xpl0ited1 (Bastian Muhlhauser)
  24-02-2022
-Last updated: 13-10-2022
+Last updated: 23-11-2022
  TODO: Fix Threading
  TODO: Certspotter
  TODO: Implement command handlers on bots
@@ -131,6 +131,10 @@ func scanWorker(isBruteForcing bool, resolver string, domain string, arfTarget u
 	if utils.GetConfig().CENSYS_SECRET != "" && utils.GetConfig().CENSYS_API_ID != "" {
 		subs = append(subs, scanners.GetCensys(domain)...)
 	}
+
+	//--- Added on 23-Nov-2022 ---
+	subs = append(subs, scanners.GetDNSDumpster(domain)...)
+	//--- End of comment ---
 
 	subs = utils.StripWithNoDomain(utils.Unique(utils.LowerSubs(subs)), domain)
 

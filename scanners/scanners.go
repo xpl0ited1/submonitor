@@ -6,10 +6,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/net/html"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
+	"regexp"
 	"strings"
 	"submonitor/utils"
 	"time"
@@ -21,6 +23,7 @@ const (
 	HACKERTARGET_URL       = "https://api.hackertarget.com/hostsearch/?q="
 	THREATCROWD_URL        = "https://www.threatcrowd.org/searchApi/v2/domain/report/?domain="
 	CENSYS_URL             = "https://search.censys.io/api/v1/search/certificates"
+	DNSDUMPSTER_URL        = "https://dnsdumpster.com/"
 )
 
 func GetSectrails(domain string) []string {
@@ -255,5 +258,127 @@ func GetCensys(domain string) []string {
 			subs = append(subs, item.Parsed.Names...)
 		}
 	}
+	return subs
+}
+
+func GetDNSDumpsterCSRFToken() (string, []*http.Cookie) {
+	url := DNSDUMPSTER_URL
+
+	req, _ := http.NewRequest("GET", url, nil)
+
+	res, _ := http.DefaultClient.Do(req)
+
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	re := regexp.MustCompile(`(?s)<input type="hidden" name="csrfmiddlewaretoken" value="(.*?)">`)
+	match := re.FindStringSubmatch(string(body))
+
+	if len(match) > 1 {
+		return match[1], res.Cookies()
+	}
+	return "", nil
+}
+
+func GetDNSDumpster(domain string) []string {
+	csrfToken, cookies := GetDNSDumpsterCSRFToken()
+	var csrfCookie string
+	for idx := range cookies {
+		if cookies[idx].Name == "csrftoken" {
+			csrfCookie = cookies[idx].Value
+			break
+		}
+	}
+	return DoDNSDumpster(domain, csrfToken, csrfCookie)
+}
+
+func ParseDNSDumpsterResponseHTML(htmlResponse string, domain string) (data []string) {
+
+	tkn := html.NewTokenizer(strings.NewReader(htmlResponse))
+
+	var vals []string
+
+	var isTd bool
+
+	for {
+
+		tt := tkn.Next()
+
+		switch {
+
+		case tt == html.ErrorToken:
+			return vals
+
+		case tt == html.StartTagToken:
+
+			t := tkn.Token()
+			isTd = t.Data == "td"
+
+		case tt == html.TextToken:
+
+			t := tkn.Token()
+
+			if isTd && strings.Contains(t.Data, domain) {
+				if t.Data[len(t.Data)-1:] != "." {
+					vals = append(vals, t.Data)
+				}
+			}
+
+			isTd = false
+		}
+	}
+}
+
+func CleanDNSDumpsterSubs(data []string) []string {
+	blacklist := []string{string('"'), "'", "<", ">", "(", "{", "}", "[", "]", "=", "~", "`", "!", "@", "#", "$", "%", "^", "&", "*", "+", "|", "\\", "/", "?", ":", ";", ",", " "}
+	var cleanSubs []string
+	for _, sub := range data {
+		hasBlacklistedChar := false
+		for _, blacklisted := range blacklist {
+			if strings.Contains(sub, blacklisted) {
+				hasBlacklistedChar = true
+				break
+			}
+		}
+		if !hasBlacklistedChar {
+			cleanSubs = append(cleanSubs, sub)
+		}
+	}
+	cleanSubs = utils.Unique(cleanSubs)
+	return cleanSubs
+}
+
+func DoDNSDumpster(domain, csrfToken, csrfCookie string) []string {
+	var subs []string
+
+	data := "csrfmiddlewaretoken=" + csrfToken + "&targetip=" + domain + "&user=free&col=on&resource=on"
+
+	req, _ := http.NewRequest("POST", DNSDUMPSTER_URL, bytes.NewBuffer([]byte(data)))
+
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Referer", "https://dnsdumpster.com/")
+	req.Header.Add("Origin", "https://dnsdumpster.com")
+	req.Header.Add("Cookie", "csrftoken="+csrfCookie)
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36")
+
+	res, _ := http.DefaultClient.Do(req)
+
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	/*for _, sub := range strings.Split(string(body), "\n") {
+		parsed_sub := strings.Split(sub, ",")[0]
+		if parsed_sub != "" && parsed_sub != domain {
+			subs = append(subs, parsed_sub)
+		}
+	}*/
+
+	//fmt.Println(string(body))
+	subs = CleanDNSDumpsterSubs(ParseDNSDumpsterResponseHTML(string(body), domain))
+
 	return subs
 }
