@@ -21,9 +21,9 @@ const (
 	SECURITYTRAILS_API_URL = "https://api.securitytrails.com/v1/"
 	SHODAN_API_URL         = "https://api.shodan.io/dns/domain/"
 	HACKERTARGET_URL       = "https://api.hackertarget.com/hostsearch/?q="
-	THREATCROWD_URL        = "https://www.threatcrowd.org/searchApi/v2/domain/report/?domain="
-	CENSYS_URL             = "https://search.censys.io/api/v1/search/certificates"
-	DNSDUMPSTER_URL        = "https://dnsdumpster.com/"
+	//THREATCROWD_URL        = "https://www.threatcrowd.org/searchApi/v2/domain/report/?domain="
+	CENSYS_URL      = "https://search.censys.io/api/v1/search/certificates"
+	DNSDUMPSTER_URL = "https://dnsdumpster.com/"
 )
 
 func GetSectrails(domain string) []string {
@@ -114,6 +114,8 @@ func GetHackertarget(domain string) []string {
 	return subs
 }
 
+/*
+Deprecated function as the service is down
 func GetThreatCrowd(domain string) []string {
 	var subs []string
 	url := THREATCROWD_URL + domain
@@ -142,7 +144,7 @@ func GetThreatCrowd(domain string) []string {
 		subs = append(subs, sub)
 	}
 	return subs
-}
+}*/
 
 func BruteForce(words []string, resolverIP, domain string, timeout int) []string {
 	var subs []string
@@ -356,8 +358,8 @@ func DoDNSDumpster(domain, csrfToken, csrfCookie string) []string {
 	req, _ := http.NewRequest("POST", DNSDUMPSTER_URL, bytes.NewBuffer([]byte(data)))
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Referer", "https://dnsdumpster.com/")
-	req.Header.Add("Origin", "https://dnsdumpster.com")
+	req.Header.Add("Referer", DNSDUMPSTER_URL)
+	req.Header.Add("Origin", DNSDUMPSTER_URL)
 	req.Header.Add("Cookie", "csrftoken="+csrfCookie)
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36")
 
@@ -370,14 +372,6 @@ func DoDNSDumpster(domain, csrfToken, csrfCookie string) []string {
 		log.Println(err)
 	}
 
-	/*for _, sub := range strings.Split(string(body), "\n") {
-		parsed_sub := strings.Split(sub, ",")[0]
-		if parsed_sub != "" && parsed_sub != domain {
-			subs = append(subs, parsed_sub)
-		}
-	}*/
-
-	//fmt.Println(string(body))
 	subs = CleanDNSDumpsterSubs(ParseDNSDumpsterResponseHTML(string(body), domain))
 
 	return subs

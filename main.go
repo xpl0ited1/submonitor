@@ -114,8 +114,7 @@ func scanWorker(isBruteForcing bool, resolver string, domain string, arfTarget u
 	var subs []string
 	var resultsFilename = utils.GenerateFileName(domain)
 
-	//Scan
-	subs = append(subs, scanners.GetThreatCrowd(domain)...)
+	//Scan for subdomains
 	subs = append(subs, scanners.GetHackertarget(domain)...)
 	if utils.GetConfig().SHODAN_APIKEY != "" {
 		subs = append(subs, scanners.GetShodan(domain)...)

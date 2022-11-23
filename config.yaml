@@ -1,6 +1,6 @@
-#DO NOT DELETE THIS FILE AND THE TARGETS.TXT FILE, THIS FILE IS USED TO CONFIGURE YOUR REPORTING METHODS AND API KEYS
+#DO NOT DELETE THIS FILE, THIS FILE IS USED TO CONFIGURE YOUR REPORTING METHODS AND API KEYS
 #Define where the discovered domains where be dumped ex. /var/www/html/subs/
-#NOTE it should end with a slash
+#NOTE it should end with a slash, ex. /home/user/
 results_path: ./
 
 #Security Trails API KEY
