@@ -11,13 +11,10 @@ import (
 )
 
 /*
- Subdomain monitor v1.0.5
+ Subdomain monitor v1.0.6
  by: xpl0ited1 (Bastian Muhlhauser)
  24-02-2022
-Last updated: 23-11-2022
- TODO: Fix Threading
- TODO: Certspotter
- TODO: Implement command handlers on bots
+Last updated: 13-12-2022
 */
 
 var (
@@ -133,6 +130,10 @@ func scanWorker(isBruteForcing bool, resolver string, domain string, arfTarget u
 
 	//--- Added on 23-Nov-2022 ---
 	subs = append(subs, scanners.GetDNSDumpster(domain)...)
+	//--- End of comment ---
+
+	//--- Added on 13-Dec-2022 ---
+	subs = append(subs, scanners.GetCrtSh(domain)...)
 	//--- End of comment ---
 
 	subs = utils.StripWithNoDomain(utils.Unique(utils.LowerSubs(subs)), domain)

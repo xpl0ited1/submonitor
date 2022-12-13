@@ -14,16 +14,18 @@ import (
 	"regexp"
 	"strings"
 	"submonitor/utils"
+	"sync"
 	"time"
 )
 
 const (
+	//THREATCROWD_URL        = "https://www.threatcrowd.org/searchApi/v2/domain/report/?domain="
 	SECURITYTRAILS_API_URL = "https://api.securitytrails.com/v1/"
 	SHODAN_API_URL         = "https://api.shodan.io/dns/domain/"
 	HACKERTARGET_URL       = "https://api.hackertarget.com/hostsearch/?q="
-	//THREATCROWD_URL        = "https://www.threatcrowd.org/searchApi/v2/domain/report/?domain="
-	CENSYS_URL      = "https://search.censys.io/api/v1/search/certificates"
-	DNSDUMPSTER_URL = "https://dnsdumpster.com/"
+	CENSYS_URL             = "https://search.censys.io/api/v1/search/certificates"
+	DNSDUMPSTER_URL        = "https://dnsdumpster.com/"
+	CRTSH_URL              = "https://crt.sh/?q="
 )
 
 func GetSectrails(domain string) []string {
@@ -148,7 +150,7 @@ func GetThreatCrowd(domain string) []string {
 
 func BruteForce(words []string, resolverIP, domain string, timeout int) []string {
 	var subs []string
-
+	log.Println("[BruteForce] Starting brute force scan")
 	if len(resolverIP) > 0 {
 		//Determine if the resolverIP comes with a port ex: 8.8.8.8:53
 		var dnsResolverIP string
@@ -182,23 +184,45 @@ func BruteForce(words []string, resolverIP, domain string, timeout int) []string
 
 		http.DefaultTransport.(*http.Transport).DialContext = dialContext
 
-		for _, word := range words {
+		subs = BruteForceDialer(words, domain, dialer)
+	} else {
+		subs = BruteForceNoDialed(words, domain)
+	}
+
+	return subs
+}
+
+func BruteForceDialer(words []string, domain string, dialer *net.Dialer) (subs []string) {
+	var wg sync.WaitGroup
+	for _, word := range words {
+		wg.Add(1)
+		go func(word, domain string, dialer *net.Dialer) {
+			defer wg.Done()
 			ips, _ := dialer.Resolver.LookupHost(context.Background(), word+"."+domain)
 
 			if len(ips) > 0 {
 				subs = append(subs, word+"."+domain)
 			}
-		}
-	} else {
-		for _, word := range words {
+		}(word, domain, dialer)
+	}
+	wg.Wait()
+	return subs
+}
+
+func BruteForceNoDialed(words []string, domain string) (subs []string) {
+	var wg sync.WaitGroup
+	for _, word := range words {
+		wg.Add(1)
+		go func(word, domain string) {
+			defer wg.Done()
 			ips, _ := net.LookupIP(word + "." + domain)
 
 			if len(ips) > 0 {
 				subs = append(subs, word+"."+domain)
 			}
-		}
+		}(word, domain)
 	}
-
+	wg.Wait()
 	return subs
 }
 
@@ -331,7 +355,7 @@ func ParseDNSDumpsterResponseHTML(htmlResponse string, domain string) (data []st
 	}
 }
 
-func CleanDNSDumpsterSubs(data []string) []string {
+func CleanHTMLSubs(data []string) []string {
 	blacklist := []string{string('"'), "'", "<", ">", "(", "{", "}", "[", "]", "=", "~", "`", "!", "@", "#", "$", "%", "^", "&", "*", "+", "|", "\\", "/", "?", ":", ";", ",", " "}
 	var cleanSubs []string
 	for _, sub := range data {
@@ -372,7 +396,67 @@ func DoDNSDumpster(domain, csrfToken, csrfCookie string) []string {
 		log.Println(err)
 	}
 
-	subs = CleanDNSDumpsterSubs(ParseDNSDumpsterResponseHTML(string(body), domain))
+	subs = CleanHTMLSubs(ParseDNSDumpsterResponseHTML(string(body), domain))
 
 	return subs
+}
+
+func GetCrtSh(domain string) (subs []string) {
+	url := CRTSH_URL + domain
+
+	req, _ := http.NewRequest("GET", url, nil)
+
+	res, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		log.Println(err)
+		return subs
+	}
+
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	subs = CleanHTMLSubs(ParseCrtShHTMLResponse(string(body), domain))
+	fmt.Println(subs)
+
+	return subs
+}
+
+func ParseCrtShHTMLResponse(htmlResponse string, domain string) (data []string) {
+	fmt.Println(domain)
+	tkn := html.NewTokenizer(strings.NewReader(htmlResponse))
+
+	var vals []string
+
+	var isTd bool
+
+	for {
+
+		tt := tkn.Next()
+
+		switch {
+
+		case tt == html.ErrorToken:
+			return vals
+
+		case tt == html.StartTagToken:
+
+			t := tkn.Token()
+			isTd = t.Data == "td"
+
+		case tt == html.TextToken:
+
+			t := tkn.Token()
+
+			if isTd && strings.Contains(t.Data, domain) {
+				if t.Data[len(t.Data)-1:] != "." {
+
+					vals = append(vals, t.Data)
+				}
+			}
+
+			isTd = false
+		}
+
+	}
 }
